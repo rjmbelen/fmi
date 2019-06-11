@@ -1,0 +1,156 @@
+import Text.Show.Functions
+{-El fondo monetario internacional nos solicitó que modelemos su negocio, basado en realizar préstamos a países en apuros 
+financieros. Sabemos de cada país el "ingreso per cápita" que es el promedio de lo que cada habitante necesita para subsistir,
+ también conocemos la población activa en el sector público y la activa en el sector privado, la lista de recursos naturales 
+ (ej: "Minería", "Petróleo", "Industria pesada") y la deuda que mantiene con el FMI. -}
+
+
+
+type Promedio= Float
+type Recurso = String 
+
+
+data Pais= Pais{
+ingresoPerCapita::Promedio,
+pobActivaPublic::Float,
+pobActivaPrivate::Float,
+recursosNaturales::[Recurso],
+deuda::Float
+
+} deriving (Show)
+--PAIS--------------
+
+
+
+fmi recetas pais = foldr $ pais recetas
+
+-- Si te dice 150% haces 150/100 = 1.5!!!!!
+--prestarle n millones de dólares al país, esto provoca que el país se endeude en un 150% de lo que el FMI le presta (por los intereses)
+
+prestar dolares pais = pais{deuda = deuda pais + intereses dolares}
+
+intereses::Float->Float
+intereses = (*1.5)
+
+recetas = [ prestar 100]--,receta2 3 ]
+
+{-
+
+reducir x cantidad de puestos de trabajo del sector público, lo que provoca que se reduzca la cantidad de 
+activos en el sector público y además que el ingreso per cápita disminuya en 20% si los puestos de trabajo son más de
+ 100 ó 15% en caso contrario
+
+
+-}
+reducir::Float->Pais->Pais
+reducir cantidadPuestos pais = pais{
+ pobActivaPublic= pobActivaPublic pais - cantidadPuestos,
+ ingresoPerCapita= ingresoPerCapita pais - disminuir cantidadPuestos }  
+
+disminuir::Float->Float
+disminuir cant 
+ |cant > 100 =  0.2
+ |otherwise = 0.15
+
+
+{-
+
+darle a una empresa afín al FMI la explotación de alguno de los recursos naturales, esto disminuye 2 millones de dólares 
+la deuda que el país mantiene con el FMI pero también deja momentáneamente sin recurso natural a dicho país. No considerar
+ qué pasa si el país no tiene dicho recurso.
+-}
+
+
+explotacion::Recurso->Pais->Pais
+explotacion recurso pais = pais {deuda= deuda pais - 2000000,
+                                recursosNaturales = momentaneamenteSinRecurso recurso (recursosNaturales pais)
+} 
+ 
+momentaneamenteSinRecurso::Recurso->[Recurso]->[Recurso] 
+momentaneamenteSinRecurso recurso recursos = filter (/= recurso) recursos 
+ 
+
+--momentaneamenteSinRecurso recurso recursos = foldl (\recurso -> (>recurso) ) [] recursos 
+
+
+
+{-
+establecer un “blindaje”, lo que provoca prestarle a dicho país la mitad de su Producto Bruto Interno 
+(que se calcula como el ingreso per cápita multiplicado por su población activa, sumando puestos públicos y privados de trabajo)
+ y reducir 500 puestos de trabajo del sector público. Evitar la repetición de código.
+-}
+
+blindaje::Pais->Pais
+--blindaje= (reducir 500).(prestar ((pbi pais) / 2 ))
+
+blindaje pais = (reducir 500.prestar (pbi pais))pais
+
+pbi::Pais -> Float
+pbi pais =  (ingresoPerCapita pais * poblacionActiva pais)  / 2
+
+poblacionActiva::Pais->Float
+poblacionActiva pais = pobActivaPublic pais + pobActivaPrivate pais 
+
+{-
+
+Dar un ejemplo de cómo generar al país Namibia, cuyo ingreso per cápita es de 4140 u$s, la población activa del
+ sector público es de 400.000, la población activa del sector privado es de 650.000, su riqueza es la minería y el ecoturismo
+ y le debe 50 (millones de u$s) al FMI.
+-}
+
+namibia::Pais
+namibia = Pais{
+ingresoPerCapita= 41410,
+pobActivaPublic=400000,
+pobActivaPrivate=650000,
+recursosNaturales= ["mineria","ecoturismo"],
+deuda= 50
+ }
+
+--mineria = "mineria"
+--ecoturismo = "ecoturismo"
+--yerba = "yerba" 
+argentina::Pais
+argentina = Pais 10 20 30  ["agua","carne vacuna", "yerba"] 40
+
+--Modelar una receta que consista en prestar 200 millones, y darle a una empresa X la explotación de la “Minería” de un país.
+--receta::Pais->Pais
+receta1 = explotacion "mineria".prestar 200 
+{-
+type Receta = [Estrategia]
+
+receta :: Receta
+receta = [prestarPlata 2000, explotar "Mineria"]
+-}
+
+--receta::Pais->Pais
+--receta = [ prestar 200, explotacion "mineria" ]
+--Ahora queremos aplicar la receta del punto 3.a al país Namibia (creado en el punto 1.b). 
+--Justificar cómo se logra el efecto colateral.
+receta = [prestar 2000, explotacion "Mineria"]
+
+-- PONER $ CON PARENTESIS!!!!!!!!
+aplicarReceta receta pais  = foldr ($) pais receta
+
+--el efecto se logra porque el foldr permite aplicarle al pais como semilla cada una de las funciones 
+-- que contiene la lista receta, es un efecto colateral porque le va aplicando una a una y luego queda el pais con esas aplicaciones
+
+
+{-
+
+Resolver todo el punto con orden superior, composición y aplicación
+parcial, no puede utilizar funciones auxiliares.
+
+a. Dada una lista de países conocer cuáles son los que pueden zafar,
+aquellos que tienen "Petróleo" entre sus riquezas naturales
+
+-} 
+
+--zafar paises = map  (=="petroleo") ((recursosNaturales pais) paises)
+
+zafar paises = elem "agua" (recursosNaturales paises) 
+
+
+za paises = foldr (zafar paises) [] paises
+
+--zafar2 paises = filter (\ pais -> (== "petroleo").(recursosNaturales pais) ) paises
