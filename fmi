@@ -224,5 +224,11 @@ en base al siguiente criterio: si aplicamos una a una cada receta, el PBI del pa
 
 -}
 
-listaOrdenada _ [receta] = "mejor"
-listaOrdenada pais (receta:recetas)
+
+ 
+--estaOrdenado :: Pais -> [Receta] -> Bool
+estaOrdenado pais [receta] = True
+estaOrdenado pais (receta1:receta2:recetas) 
+     = revisarPBI receta1 pais <= revisarPBI receta2 pais && estaOrdenado pais (receta2:recetas)  
+     where revisarPBI receta = pbi . aplicarReceta receta
+ 
