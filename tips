@@ -6,3 +6,27 @@ cd my-project
 stack setup
 stack build
 stack exec my-project-exe
+
+
+
+-------para bajar mi parcial
+
+git config --global user.name "John Doe"
+git config --global user.email johndoe@example.com
+
+git clone https://github.com/pdep-utn/kata-0-primera-funcion-Juancete.git
+
+cd nombre-de-tu-proyecto
+stack build intero       
+stack build   
+code .
+
+--- para subir
+
+git add .
+git commit -m "Kata xx resuelta"
+
+git push origin master
+
+
+https://github.com/pdep-utn/enunciados-miercoles-noche/blob/master/pages/katas/katas-guia.md
