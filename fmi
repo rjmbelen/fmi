@@ -1,11 +1,17 @@
+module Lib where
 import Text.Show.Functions
+
+someFunc :: IO ()
+someFunc = putStrLn "someFunc"
+
+
 {-El fondo monetario internacional nos solicitó que modelemos su negocio, basado en realizar préstamos a países en apuros 
 financieros. Sabemos de cada país el "ingreso per cápita" que es el promedio de lo que cada habitante necesita para subsistir,
  también conocemos la población activa en el sector público y la activa en el sector privado, la lista de recursos naturales 
  (ej: "Minería", "Petróleo", "Industria pesada") y la deuda que mantiene con el FMI. -}
 
 
-
+type Receta = Pais->Pais
 type Promedio= Float
 type Recurso = String 
 
@@ -25,8 +31,10 @@ deuda::Float
 fmi recetas pais = foldr $ pais recetas
 
 -- Si te dice 150% haces 150/100 = 1.5!!!!!
---prestarle n millones de dólares al país, esto provoca que el país se endeude en un 150% de lo que el FMI le presta (por los intereses)
+--prestarle n millones de dólares al país, esto provoca que el país se endeude en un 150% de lo que el FMI le
+-- presta (por los intereses)
 
+prestar::Float->Receta                                                                                                                      
 prestar dolares pais = pais{deuda = deuda pais + intereses dolares}
 
 intereses::Float->Float
@@ -42,15 +50,20 @@ activos en el sector público y además que el ingreso per cápita disminuya en 
 
 
 -}
-reducir::Float->Pais->Pais
+
+
+ -- 100 en 20 % 100*20/100 = 20
+
+ --- 100*0.2 = 20 
+reducir::Float->Receta
 reducir cantidadPuestos pais = pais{
  pobActivaPublic= pobActivaPublic pais - cantidadPuestos,
- ingresoPerCapita= ingresoPerCapita pais - disminuir cantidadPuestos }  
+ ingresoPerCapita= ingresoPerCapita pais - (ingresoPerCapita pais *  disminuir cantidadPuestos) }  
 
 disminuir::Float->Float
 disminuir cant 
- |cant > 100 =  0.2
- |otherwise = 0.15
+ |cant > 100 =   0.2 
+ |otherwise =  0.15
 
 
 {-
@@ -61,7 +74,7 @@ la deuda que el país mantiene con el FMI pero también deja momentáneamente si
 -}
 
 
-explotacion::Recurso->Pais->Pais
+explotacion::Recurso->Receta
 explotacion recurso pais = pais {deuda= deuda pais - 2000000,
                                 recursosNaturales = momentaneamenteSinRecurso recurso (recursosNaturales pais)
 } 
@@ -70,7 +83,7 @@ momentaneamenteSinRecurso::Recurso->[Recurso]->[Recurso]
 momentaneamenteSinRecurso recurso recursos = filter (/= recurso) recursos 
  
 
---momentaneamenteSinRecurso recurso recursos = foldl (\recurso -> (>recurso) ) [] recursos 
+--momentaneamenteSinRecurso1 recurso recursos = foldr (\recurso -> (/=recurso) ) [] recursos 
 
 
 
@@ -80,8 +93,8 @@ establecer un “blindaje”, lo que provoca prestarle a dicho país la mitad de
  y reducir 500 puestos de trabajo del sector público. Evitar la repetición de código.
 -}
 
-blindaje::Pais->Pais
---blindaje= (reducir 500).(prestar ((pbi pais) / 2 ))
+blindaje::Receta
+--blindaje= (reducir 500).(prestar ((pbi pais) / 2 )) 
 
 blindaje pais = (reducir 500.prestar (pbi pais))pais
 
@@ -100,7 +113,7 @@ Dar un ejemplo de cómo generar al país Namibia, cuyo ingreso per cápita es de
 
 namibia::Pais
 namibia = Pais{
-ingresoPerCapita= 41410,
+ingresoPerCapita= 4140,
 pobActivaPublic=400000,
 pobActivaPrivate=650000,
 recursosNaturales= ["mineria","ecoturismo"],
@@ -115,25 +128,19 @@ argentina = Pais 10 20 30  ["agua","carne vacuna", "yerba"] 40
 
 --Modelar una receta que consista en prestar 200 millones, y darle a una empresa X la explotación de la “Minería” de un país.
 --receta::Pais->Pais
-receta1 = explotacion "mineria".prestar 200 
-{-
-type Receta = [Estrategia]
+receta::[Receta]
+receta = [prestar 200,explotacion "mineria"] 
 
-receta :: Receta
-receta = [prestarPlata 2000, explotar "Mineria"]
--}
 
---receta::Pais->Pais
---receta = [ prestar 200, explotacion "mineria" ]
 --Ahora queremos aplicar la receta del punto 3.a al país Namibia (creado en el punto 1.b). 
 --Justificar cómo se logra el efecto colateral.
-receta = [prestar 2000, explotacion "Mineria"]
 
 -- PONER $ CON PARENTESIS!!!!!!!!
 aplicarReceta receta pais  = foldr ($) pais receta
 
 --el efecto se logra porque el foldr permite aplicarle al pais como semilla cada una de las funciones 
--- que contiene la lista receta, es un efecto colateral porque le va aplicando una a una y luego queda el pais con esas aplicaciones
+-- que contiene la lista receta, es un efecto colateral porque le va aplicando una a una y luego queda el pais
+-- con esas aplicaciones
 
 
 {-
@@ -144,13 +151,78 @@ parcial, no puede utilizar funciones auxiliares.
 a. Dada una lista de países conocer cuáles son los que pueden zafar,
 aquellos que tienen "Petróleo" entre sus riquezas naturales
 
--} 
+-}
 
---zafar paises = map  (=="petroleo") ((recursosNaturales pais) paises)
+--zafar paises = filter (elem "petroleo".recursosNaturales ) paises
+zafar  = filter (elem "petroleo".recursosNaturales)  
+zafar2 = filter (\ pais -> elem "petroleo" (recursosNaturales pais) ) 
 
-zafar paises = elem "agua" (recursosNaturales paises) 
+zafarse paises = filter zafar1 paises
+--filter zafar [argentina, namibia] porque lo va agarrando de a un pais
+zafar1 pais = elem "petroleo" (recursosNaturales pais) 
+--zafar1  = elem "petroleo".recursosNaturales  
 
 
-za paises = foldr (zafar paises) [] paises
 
---zafar2 paises = filter (\ pais -> (== "petroleo").(recursosNaturales pais) ) paises
+-- Dada una lista de países, saber el total de deuda que el FMI tiene a su favor
+
+
+deudaTotal paises = foldr ((+).deuda) 0 paises
+--deudaFmi paises = sum (map deuda paises)
+deudaFmi = sum.map deuda
+
+
+-- Indicar en dónde apareció cada uno de los conceptos (solo una vez) y justificar qué ventaja tuvo para
+-- resolver el requerimiento.
+
+--En las funciones se pudo realizar la composicion de dos funciones ya que ambas tiene mismo dominio e imagen. Como asi tambien
+--la aplicacion parcial..
+
+{-                                                            
+Aparece el concepto de composicion, en "sum.map deuda", por ejemplo, ya que la imagen de la funcion map coincide con el dominio
+de la funcion sum, por lo que se pueden componer sin ningun tipo de problemas. También aparece el concepto de aplicacion parcial
+en, por ejemplo, "map deuda" , ya que esta funcion espera 2 parametros, y solo le estamos pasando el parametro deuda, 
+esperando recibir al segundo parametro paises. Sin el concepto de aplicacion parcial no hubiese sido posible resolverlo 
+de esta manera. Ademas aparece el concepto de orden superior porque estamos usando funciones como "filter" o "map",
+que pueden recibir como parametro una funcion, como tambien devolver otra funcion, lo que se denomina orden superior.
+La ventaja para resolver este requerimiento es que gracias al orden superior nos evitamos repetir codigo constantemente,
+delegando la responsabilidad a una unica funcion
+ la ventaja es que permiten construir funciones más generales, recibiendo funciones que abstraen porciones de código. 
+-}
+
+
+----------------------------------------------------------------------------
+
+
+{-
+Si un país tiene infinitos recursos naturales, modelado con esta función
+recursosNaturalesInfinitos :: [String]
+recursosNaturalesInfinitos = "Energia" : recursosNaturalesInfinitos
+¿qué sucede evaluamos la función 4a con ese país? 
+¿y con la 4b?
+Justifique ambos puntos relacionándolos con algún concepto.
+
+-}
+
+--No se puede evaluar la funcion ya que se produce un loop infinito en la lista de recursos con "energia" 
+--y nunca logra terminar de recorrerla para ver si encuentra "petroleo".
+
+recursosNaturalesInfinitos :: [String]
+recursosNaturalesInfinitos = "Energia" : recursosNaturalesInfinitos
+funcionInfinitaPrueba = zafar [Pais 10 20 30  recursosNaturalesInfinitos  40] 
+-- Con respecto al punto b si es posible evaluarlo ya que gracias a la evaluacion diferida (lazy evaluation) nos permite
+-- solo tomar la deuda que es lo que queremos evaluar.
+
+paraProbar = deudaTotal [Pais 10 20 30  recursosNaturalesInfinitos  40] 
+
+
+{-
+
+Debe resolver este punto con recursividad: dado un país y una lista de recetas, saber si la lista de recetas está ordenada de “peor” a “mejor”, 
+en base al siguiente criterio: si aplicamos una a una cada receta, el PBI del país va de menor a mayor. Recordamos que el Producto Bruto Interno
+ surge de multiplicar el ingreso per cápita por la población activa (privada y pública). 
+
+-}
+
+listaOrdenada _ [receta] = "mejor"
+listaOrdenada pais (receta:recetas)
